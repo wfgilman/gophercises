@@ -46,7 +46,7 @@ func main() {
 		go func() {
 			var answer string
 			fmt.Scanf("%s", &answer)
-			answerChannel <- answer
+			answerChannel <- strings.TrimSpace(answer)
 		}()
 
 		select {
