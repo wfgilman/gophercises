@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 )
 
 type Problem struct {
@@ -19,7 +20,8 @@ func main() {
 	flag.Parse()
 
 	// 1. Read CSV file into array
-	problems := ImportProblems(*fileName)
+	records := ImportProblems(*fileName)
+	problems := ParseRecords(records)
 
 	// 2. Initialize correct and incorrect variables
 	var numCorrect int = 0
@@ -44,29 +46,31 @@ func main() {
 	fmt.Printf("Your score is %d of %d", numCorrect, numProblems)
 }
 
-func ImportProblems(fileName string) []Problem {
-	var problems []Problem
-
+func ImportProblems(fileName string) [][]string {
 	f, err := os.Open(fileName)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Could not open file named %s", fileName)
+		os.Exit(1)
 	}
 
 	r := csv.NewReader(f)
 
 	records, err := r.ReadAll()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Could not read file named %s. Err: %v", fileName, err)
+		os.Exit(1)
 	}
 
-	for _, record := range records {
-		problem := Problem{
+	return records
+}
+
+func ParseRecords(records [][]string) []Problem {
+	problems := make([]Problem, len(records))
+	for index, record := range records {
+		problems[index] = Problem{
 			question: record[0],
-			answer:   record[1],
+			answer:   strings.TrimSpace(record[1]),
 		}
-
-		problems = append(problems, problem)
 	}
-
 	return problems
 }
