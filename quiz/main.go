@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -16,8 +15,9 @@ type Problem struct {
 }
 
 func main() {
-	// 0. User specifies filename
+	// 0. User specifies filename and time limit
 	fileName := flag.String("f", "problems.csv", "name of the file containing problems")
+	timerDurationSec := flag.Int("t", 2, "duration of the quiz in seconds")
 	flag.Parse()
 
 	// 1. Read CSV file into array
@@ -26,19 +26,30 @@ func main() {
 
 	// 2. Initialize correct and incorrect variables
 	var numCorrect int = 0
-	var currentAnswer string
 
-	// 3. Loop through array and prompt question, take input
+	// 3. Start timer
+	timer := time.NewTimer(time.Duration(*timerDurationSec) * time.Second)
+
+	// 4. Loop through array and prompt question, take input
 	for index, problem := range problems {
 		fmt.Printf("Problem %v: What is %s? ", index+1, problem.question)
+		answerChannel := make(chan string)
+		go func() {
+			var answer string
+			fmt.Scanf("%s", &answer)
+			answerChannel <- answer
+		}()
 
-		_, err := fmt.Scanf("%s", &currentAnswer)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		if currentAnswer == problem.answer {
-			numCorrect++
+		select {
+		case <-timer.C:
+			{
+				fmt.Printf("\nTime is up! Your score is %d of %d", numCorrect, len(problems))
+				return
+			}
+		case answer := <-answerChannel:
+			if answer == problem.answer {
+				numCorrect++
+			}
 		}
 	}
 
@@ -73,8 +84,4 @@ func ParseRecords(records [][]string) []Problem {
 		}
 	}
 	return problems
-}
-
-func timer() {
-	time.Sleep(30 * time.Millisecond)
 }
