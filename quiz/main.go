@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 type Problem struct {
@@ -25,7 +26,6 @@ func main() {
 
 	// 2. Initialize correct and incorrect variables
 	var numCorrect int = 0
-	var numProblems int = len(problems)
 	var currentAnswer string
 
 	// 3. Loop through array and prompt question, take input
@@ -43,7 +43,7 @@ func main() {
 	}
 
 	// 4. Return score
-	fmt.Printf("Your score is %d of %d", numCorrect, numProblems)
+	fmt.Printf("Your score is %d of %d", numCorrect, len(problems))
 }
 
 func ImportProblems(fileName string) [][]string {
@@ -73,4 +73,8 @@ func ParseRecords(records [][]string) []Problem {
 		}
 	}
 	return problems
+}
+
+func timer() {
+	time.Sleep(30 * time.Millisecond)
 }
