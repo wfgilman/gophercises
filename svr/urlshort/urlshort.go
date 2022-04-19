@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"example.com/handler"
-	// "github.com/boltdb/bolt"
+	"github.com/boltdb/bolt"
 )
 
 func hello(w http.ResponseWriter, req *http.Request) {
@@ -41,25 +41,26 @@ func main() {
 	mux.HandleFunc("/hello", hello)
 	mux.HandleFunc("/headers", headers)
 
-	// db, err := bolt.Open("svr.db", 0600, &bolt.Options{Timeout: 1 * time.Second})
-	// if err != nil {
-	// 	fmt.Errorf("could not open db: %s", err)
-	// }
-	// defer db.Close()
-	//
-	// db.Update(func(tx *bolt.Tx) error {
-	// 	_, err := tx.CreateBucket([]byte("PathUrl"))
-	// 	if err != nil {
-	// 		return fmt.Errorf("create bucket: %s", err)
-	// 	}
-	// 	return nil
-	// })
-	//
-	// db.Update(func(tx *bolt.Tx) error {
-	// 	b := tx.Bucket([]byte("PathUrl"))
-	// 	err := b.Put([]byte("/disney"), []byte("https://www.disney.com"))
-	// 	return err
-	// })
+	db, err := bolt.Open("svr.db", 0600, &bolt.Options{Timeout: 1 * time.Second})
+	if err != nil {
+		fmt.Errorf("could not open db: %s", err)
+	}
+	defer db.Close()
+
+	db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucket([]byte("PathUrl"))
+		if err != nil {
+			return fmt.Errorf("create bucket: %s", err)
+		}
+		return nil
+	})
+
+	db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("PathUrl"))
+		err := b.Put([]byte("/disney"), []byte("https://www.disney.com"))
+		err = b.Put([]byte("/mcu"), []byte("https://en.wikipedia.org/wiki/Marvel_Cinematic_Universe"))
+		return err
+	})
 
 	// pathsToUrls := map[string]string{
 	// 	"/google": "https://google.com",
@@ -72,22 +73,22 @@ func main() {
 	//   url: https://www.cnn.com/
 	// `
 
-	json := `[
-	    {
-	      "path":"/erlang",
-	      "url":"https://www.erlang.org/"
-	    },
-	    {
-	      "path":"/hacker",
-	      "url":"https://news.ycombinator.com/"
-	    }
-	  ]
-	`
+	// json := `[
+	//     {
+	//       "path":"/erlang",
+	//       "url":"https://www.erlang.org/"
+	//     },
+	//     {
+	//       "path":"/hacker",
+	//       "url":"https://news.ycombinator.com/"
+	//     }
+	//   ]
+	// `
 
 	// mapHandler := handler.MapHandler(pathsToUrls, mux)
 	// yamlHandler, err := handler.YamlHandler([]byte(yaml), mux)
-	jsonHandler, err := handler.JsonHandler([]byte(json), mux)
-	// dbHandler, err := handler.DbHandler(db, mux)
+	// jsonHandler, err := handler.JsonHandler([]byte(json), mux)
+	dbHandler, err := handler.DbHandler(db, mux)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
@@ -95,7 +96,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%s", *port),
-		Handler: jsonHandler,
+		Handler: dbHandler,
 	}
 
 	go start(server)

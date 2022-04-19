@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/boltdb/bolt"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -72,4 +73,18 @@ func ParseJson(data []byte) ([]PathUrl, error) {
 		return nil, err
 	}
 	return pathsToUrls, nil
+}
+
+func DbHandler(db *bolt.DB, fallback http.Handler) (http.HandlerFunc, error) {
+	pathsToUrls := make(map[string]string)
+	db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("PathUrl"))
+		c := b.Cursor()
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			pathsToUrls[string(k)] = string(v)
+		}
+		return nil
+	})
+
+	return MapHandler(pathsToUrls, fallback), nil
 }
